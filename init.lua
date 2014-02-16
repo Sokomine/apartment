@@ -26,6 +26,7 @@
 --]]    
 
 -- Changelog:
+-- 16.02.14 Removed MAX_LIGHT var and set to fixed value.
 -- 16.02.14 Only descriptions and ownership of known objects are changed.
 --          When digging the panel, the descriptions are reset.
 -- 14.02.14 Improved formspecs, messages and descriptions of rented and vacant items.
@@ -494,7 +495,7 @@ minetest.register_node("apartment:apartment", {
 	tiles = {"default_chest_top.png^door_steel.png"},
 	paramtype  = "light",
         paramtype2 = "facedir",
-	light_source = LIGHT_MAX-1,
+	light_source = 14,
 	groups = {cracky=2},
 	node_box = {
 		type = "fixed",
