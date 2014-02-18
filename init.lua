@@ -20,20 +20,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  Version: 1.1 
+  Version: 1.2 
   Autor:   Sokomine
   Date:    12.02.14
 --]]    
 
 -- Changelog:
+-- 18.02.14 Added support for further nodes (shops, travelnet, ..).
+--          Cleaned up formspec that contains apartment information.
+--          Introduced diffrent categories so that i.e. a shop and an apartment can be rented at the same time.
 -- 16.02.14 Removed MAX_LIGHT var and set to fixed value.
 -- 16.02.14 Only descriptions and ownership of known objects are changed.
 --          When digging the panel, the descriptions are reset.
 -- 14.02.14 Improved formspecs, messages and descriptions of rented and vacant items.
---         Players with the apartment_unrent priv can now throw other players out of apartments. 
---         Apartment names have to be uniq.
---         Each player can only rent one apartment at a time.
---         Added /aphome command
+--          Players with the apartment_unrent priv can now throw other players out of apartments. 
+--          Apartment names have to be uniq.
+--          Each player can only rent one apartment at a time.
+--          Added /aphome command
 
 minetest.register_privilege("apartment_unrent", { description = "allows to throw players out of apartments they have rented", give_to_singleplayer = false});
 
@@ -95,18 +98,19 @@ apartment.get_formspec = function( pos, placer )
 	-- if a name has been set
 	if( descr and descr ~= '' ) then
 
-		local size_txt = 'label[0.0,0.2;It extends]'..
-			'label[1.0,0.2;'..(meta:get_string("size_right"))..' m to the right,]'..
-			'label[2.6,0.2;'..(meta:get_string("size_left" ))..' m to the left,]'..
-			'label[4.0,0.2;'..(meta:get_string("size_up"   ))..' m up,]'..
-			'label[4.8,0.2;'..(meta:get_string("size_down" ))..' m down,]'..
-			'label[0.0,0.5;'..(meta:get_string("size_back" ))..' m in front of you and]'..
-			'label[2.3,0.5;'..(meta:get_string("size_front"))..' m behind you.]'..
-			'label[3.9,0.5;It has been built by]'..
-			'label[0.0,0.8;'..(original_owner or '?')..'.]';
+		local size_txt = 'textarea[0.0,0.8;6.5,1.2;info;;'..minetest.formspec_escape(
+					'It extends '..
+					(meta:get_string("size_right") or '?')..' m to the right, '..
+					(meta:get_string("size_left" ) or '?')..' m to the left, '..
+					(meta:get_string("size_up"   ) or '?')..' m up, '..
+					(meta:get_string("size_down" ) or '?')..' m down,\n'..
+					(meta:get_string("size_back" ) or '?')..' m in front of you and '..
+					(meta:get_string("size_front") or '?')..' m behind you. '..
+					'It has been built by\n'..(original_owner or '?')..
+					'. Building category: '..tostring( meta:get_string('category'))..'.')..']';
 
 		if( original_owner ~= owner and owner ~= '' ) then
-			return 'size[6,3]'..
+			return 'size[6.5,3]'..
 			'label[2.0,-0.3;Apartment \''..minetest.formspec_escape( descr )..'\']'..
 			size_txt..
 			'label[0.5,1.4;This apartment is rented by:]'..
@@ -137,11 +141,14 @@ apartment.get_formspec = function( pos, placer )
 			'label[2.0,-0.3;Apartment Configuration]'..
 
 			'label[0.5,0.5;Name or number for this apartment:]'..
-			'field[5.0,1.0;2.0,0.5;descr;;'..tostring( descr )..']'..
+			'field[5.0,0.9;2.0,0.5;descr;;'..tostring( descr )..']'..
 
-			'label[0.5,1.2;The apartment shall extend]'..
-			'label[3.3,1.2;this many blocks from here:]'..
-			'label[0.5,1.4;(relative to this panel)]'..
+			'label[0.5,0.8;Category (i.e. house, shop):]'..
+			'field[5.0,1.4;2.0,0.5;category;;apartment]'..
+
+			'label[0.5,1.3;The apartment shall extend]'..
+			'label[3.3,1.3;this many blocks from here:]'..
+			'label[0.5,1.5;(relative to this panel)]'..
 
 			'label[1.3,3.5;left:]' ..'field[2.0,4.0;1.0,0.5;size_left;;' ..tostring( size_left  )..']'..
 			'label[4.6,3.5;right]' ..'field[4.0,4.0;1.0,0.5;size_right;;'..tostring( size_right )..']'..
@@ -164,6 +171,7 @@ apartment.on_receive_fields = function(pos, formname, fields, player)
 	local original_owner = meta:get_string( 'original_owner' );
 	local          owner = meta:get_string(          'owner' );
 	local          descr = meta:get_string(          'descr' );
+	local       category = meta:get_string(       'category' );
 
  	if( not( fields ) or fields.abort or not( original_owner ) or original_owner=='' or not( fields.quit )) then
 		return;
@@ -193,6 +201,7 @@ apartment.on_receive_fields = function(pos, formname, fields, player)
 		    or not(size_down    ) or size_down < 0 or size_down > 10
 		    or not(size_front   ) or size_front< 0 or size_front> 10
 		    or not(size_back    ) or size_back < 0 or size_back > 10 
+		    or not(fields.category )
 		    or not(fields.descr ) or fields.descr == '') then
 
 			minetest.chat_send_player( pname, 'Error: Not all fields have been filled in or the area is too large.');
@@ -214,14 +223,16 @@ apartment.on_receive_fields = function(pos, formname, fields, player)
 		meta:set_int( 'size_back',   size_back  );
 
 		meta:set_string( 'descr',    fields.descr );
+		meta:set_string( 'category', fields.category );
+
 		meta:set_string( 'formspec', apartment.get_formspec( pos, player ));
 
-		apartment.rent( pos, original_owner, nil );
+		apartment.rent( pos, original_owner, nil, player );
 
-		apartment.apartments[ fields.descr ] = { pos={x=pos.x, y=pos.y, z=pos.z}, original_owner = original_owner, owner='' };
+		apartment.apartments[ fields.descr ] = { pos={x=pos.x, y=pos.y, z=pos.z}, original_owner = original_owner, owner='', category = fields.category };
 		apartment.save_data();
 
-		minetest.chat_send_player( pname, 'Apartment \''..tostring( fields.descr )..'\' is ready for rental.');
+		minetest.chat_send_player( pname, 'Apartment \''..tostring( fields.descr )..'\' (category: '..tostring( fields.category )..') is ready for rental.');
 		return;
 	
 	elseif( fields.rent and pname == original_owner ) then
@@ -247,14 +258,15 @@ apartment.on_receive_fields = function(pos, formname, fields, player)
 			
 		-- make sure only one apartment can be rented at a time
 		for k,v in pairs( apartment.apartments ) do
-			if( v and v.owner and v.owner==pname ) then
-				minetest.chat_send_player( pname, 'Sorry. You can only rent one apartment at a time. You have already '..
+			if( v and v.owner and v.owner==pname 
+				and v.category and category and v.category == category) then
+				minetest.chat_send_player( pname, 'Sorry. You can only rent one apartment per category at a time. You have already '..
 					'rented apartment '..k..'.');
 				return;
 			end
 		end
 
-		if( not( apartment.rent( pos, pname, nil ))) then
+		if( not( apartment.rent( pos, pname, nil, player ))) then
 			minetest.chat_send_player( pname, 'Sorry. There was an internal error. Please try again later.');
 			return;
 		end
@@ -264,7 +276,7 @@ apartment.on_receive_fields = function(pos, formname, fields, player)
 		return;
 
 	elseif( fields.unrent and owner ~= original_owner and owner==pname ) then
-		if( not( apartment.rent( pos, original_owner, nil ) )) then
+		if( not( apartment.rent( pos, original_owner, nil, player ) )) then
 			minetest.chat_send_player( pname, 'Something went wrong when giving back the apartment.');
 			return;
 		end
@@ -278,17 +290,19 @@ apartment.on_receive_fields = function(pos, formname, fields, player)
 			minetest.chat_send_player( pname, 'You do not have the privilelge to throw other people out of apartments they have rented.');
 			return;
 		end
-		if( not( apartment.rent( pos, original_owner, nil ) )) then
+		if( not( apartment.rent( pos, original_owner, nil, player ) )) then
 			minetest.chat_send_player( pname, 'Something went wrong when giving back the apartment.');
 			return;
 		end
 		minetest.chat_send_player( pname, 'Player '..owner..' has been thrown out of the apartment. It can now be rented by another player.');
+		meta:set_string( 'formspec', apartment.get_formspec( pos, player ));
 	end
 end
 
 
 -- actually rent the apartment (if possible); return true on success
-apartment.rent = function( pos, pname, oldmetadata )
+-- the "actor" field is only for such cases in which an object is needed for update functiones (i.e. travelnet)
+apartment.rent = function( pos, pname, oldmetadata, actor )
 	local node  = minetest.env:get_node(pos);
 	local meta  = minetest.get_meta(pos);
 	local original_owner = meta:get_string( 'original_owner' );
@@ -402,12 +416,6 @@ apartment.rent = function( pos, pname, oldmetadata )
 							else
 								itext = "Locked Chest in Ap. "..descr.." ("..rented_by..")";
 							end
-						elseif( n.name == 'apartment:apartment' ) then
-							if( pname==original_owner ) then
-								itext = "Rent apartment "..descr.." here by right-clicking this panel!";
-							else
-								itext = "Apartment rental control panel for apartment "..descr.." ("..rented_by..")";
-							end
 						elseif( n.name == 'doors:door_steel_b_1' or n.name == 'doors:door_steel_t_1' 
 						     or n.name == 'doors:door_steel_b_2' or n.name == 'doors:door_steel_t_2' ) then
 							if( pname=='' ) then
@@ -419,6 +427,17 @@ apartment.rent = function( pos, pname, oldmetadata )
 							end
 							-- doors use another meta text
 							m:set_string( 'doors_owner', pname );
+						elseif( n.name == "locked_sign:sign_wall_locked" ) then
+							itext =  "\"\" ("..rented_by..")";
+
+						-- only change the one panel that controls this apartment - not any others in the way
+						elseif( n.name == 'apartment:apartment' and px==pos.x and py==pos.y and pz==pos.z) then
+							if( pname==original_owner ) then
+								itext = "Rent apartment "..descr.." here by right-clicking this panel!";
+							else
+								itext = "Apartment rental control panel for apartment "..descr.." ("..rented_by..")";
+							end
+
 						elseif( n.name == "technic:iron_locked_chest" ) then
 							if( pname=='' ) then
 								itext = "Iron Locked Chest (owned by "..original_owner..")";
@@ -437,6 +456,7 @@ apartment.rent = function( pos, pname, oldmetadata )
 							else
 								itext = "Gold Locked Chest in Ap. "..descr.." ("  ..rented_by..")";
 							end
+
 						elseif( n.name == "inbox:empty" ) then
 							if( pname=='' ) then
 								itext = original_owner.."'s Mailbox";
@@ -456,7 +476,94 @@ apartment.rent = function( pos, pname, oldmetadata )
 						     or n.name == "locks:door_bottom_1"
 						     or n.name == "locks:door_bottom_2") then
 							itext = "Shared locked door ("..rented_by..")";
-						else itext = '';
+
+						elseif( n.name == "chests_0gb_us:shared" ) then
+							itext = "Shared Chest ("..rented_by..")";
+						elseif( n.name == "chests_0gb_us:secret" ) then
+							itext = "Secret Chest ("..rented_by..")";
+						elseif( n.name == "chests_0gb_us:dropbox") then
+							itext = "Dropbox ("..rented_by..")";
+
+						elseif( n.name == "itemframes:frame" ) then
+							itext = "Item frame ("..rented_by..")";
+						elseif( n.name == "itemframes:pedestral" ) then
+							itext = "Pedestral frame ("..rented_by..")";
+
+
+						-- money mod - shop and barter shop; admin shops do not change ownership
+						elseif( n.name == "money:shop" ) then
+							if(     m:get_string('infotext')=="Untuned Shop" 
+							     or m:get_string('infotext')=="Detuned Shop"
+							     or not( m:get_string('shopname' ))
+							     or m:get_string('infotext')=="Untuned Shop (owned by "..(m:get_string('owner') or "")..")") then
+								itext = "Untuned Shop ("..rented_by..")";
+							else
+								itext = "Shop \""..m:get_string('shopname').."\" ("..rented_by..")";
+							end
+						elseif( n.name == "money:barter_shop" ) then
+							if(     m:get_string('infotext')=="Untuned Barter Shop" 
+							     or m:get_string('infotext')=="Detuned Barter Shop"
+							     or not( m:get_string('shopname' ))
+							     or m:get_string('infotext')=="Untuned Barter Shop (owned by "..(m:get_string('owner') or "")..")") then
+								itext = "Untuned Barter Shop ("..rented_by..")";
+							else
+								itext = "Barter Shop \""..m:get_string('shopname').."\" ("..rented_by..")";
+							end
+						
+						elseif( n.name == "currency:safe") then
+							itext = "Safe ("..rented_by..")";
+						elseif( n.name == "currency:shop") then
+							itext = "Exchange shop ("..rented_by..")";
+
+						elseif( n.name == "bitchange:bank" ) then
+							itext = "Bank ("..rented_by..")";
+						elseif( n.name == "bitchange:moneychanger" ) then
+							itext = "Moneychanger  ("..rented_by..")";
+						elseif( n.name == "bitchange:warehouse" ) then
+							itext = "Warehouse ("..rented_by..")";
+						elseif( n.name == "bitchange:shop" ) then
+							if( m:get_string('title') and m:get_string('title') ~= '' ) then
+								itext = "Exchange shop \""..( m:get_string('title')).."\" ("..rented_by..")";
+							else
+								itext = "Exchange shop ("..rented_by..")";
+							end
+
+						elseif( n.name == "vendor:vendor"
+						     or n.name == "vendor:depositor") then
+							if( pname == '' ) then
+								m:set_string( 'owner',    original_owner );
+							else
+								m:set_string( 'owner',    pname );
+							end
+							vendor.refresh( {x=px, y=py, z=pz}, nil);
+							-- everything has been set alrady
+							itext = '';
+
+						-- un-configure the travelnet
+						elseif( n.name == "travelnet:travelnet"
+						     or n.name == "travelnet:elevator"
+						     or n.name == "locked_travelnet:elevator"
+						     or n.name == "locked_travelnet:travelnet" ) then
+						   
+							local oldmetadata = { fields = {
+								owner           = m:get_string('owner'),
+								station_name    = m:get_string('station_name'),
+								station_network = m:get_string('station_network') }};
+								 
+							-- the old box has to be removed from the network
+							travelnet.remove_box( {x=px, y=py, z=pz},  nil, oldmetadata, actor );
+							if( pname == '' ) then
+								m:set_string( 'owner',    original_owner );
+							else
+								m:set_string( 'owner',    pname );
+							end
+							-- prepare the box with new input formspec etc.
+							minetest.registered_nodes[ n.name ].after_place_node({x=px, y=py, z=pz}, actor, nil);
+							itext = '';
+
+
+						else
+							itext = '';
 						end
 						-- only set ownership of nodes the mod knows how to handle
 						if( itext ) then
@@ -576,7 +683,7 @@ minetest.register_node("apartment:apartment", {
 
 			-- actually remove the apartment
 			oldmetadata.param2 = oldnode.param2;
-			apartment.rent( pos, '', oldmetadata );
+			apartment.rent( pos, '', oldmetadata, digger );
 			apartment.apartments[ descr ] = nil;
 			apartment.save_data();
 			minetest.chat_send_player( digger:get_player_name(), "Removed apartment "..descr.." successfully.");
@@ -617,4 +724,3 @@ end
 
 -- upon server start, read the savefile
 apartment.restore_data();
-
