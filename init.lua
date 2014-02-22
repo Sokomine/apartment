@@ -26,6 +26,7 @@
 --]]    
 
 -- Changelog:
+-- 22.02.14 Added code for spawning several apartments at the same time. 
 -- 18.02.14 Added support for further nodes (shops, travelnet, ..).
 --          Cleaned up formspec that contains apartment information.
 --          Introduced diffrent categories so that i.e. a shop and an apartment can be rented at the same time.
@@ -41,6 +42,8 @@
 minetest.register_privilege("apartment_unrent", { description = "allows to throw players out of apartments they have rented", give_to_singleplayer = false});
 
 apartment = {}
+
+dofile(minetest.get_modpath("apartment")..'/handle_schematics.lua');
 
 -- will contain information about all apartments of the server in the form:
 -- { apartment_descr = { pos={x=0,y=0,z=0}, original_owner='', owner=''}
