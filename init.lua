@@ -26,6 +26,9 @@
 --]]    
 
 -- Changelog:
+-- 25.02.14 Buildings can now be saved. Just prefix the apartment name with save_as_
+--          start_pos and end_pos of apartments are now saved (necessary for the above mentioned save function).
+--          Building spawner chest is now working.
 -- 22.02.14 Added code for spawning several apartments at the same time. 
 -- 18.02.14 Added support for further nodes (shops, travelnet, ..).
 --          Cleaned up formspec that contains apartment information.
@@ -232,10 +235,40 @@ apartment.on_receive_fields = function(pos, formname, fields, player)
 
 		apartment.rent( pos, original_owner, nil, player );
 
-		apartment.apartments[ fields.descr ] = { pos={x=pos.x, y=pos.y, z=pos.z}, original_owner = original_owner, owner='', category = fields.category };
+		apartment.apartments[ fields.descr ] = { pos={x=pos.x, y=pos.y, z=pos.z}, original_owner = original_owner, owner='', category = fields.category,
+		                                         start_pos = apartment.apartments[ fields.descr ].start_pos,
+		                                         end_pos   = apartment.apartments[ fields.descr ].end_pos  };
 		apartment.save_data();
 
 		minetest.chat_send_player( pname, 'Apartment \''..tostring( fields.descr )..'\' (category: '..tostring( fields.category )..') is ready for rental.');
+
+		-- this way, schematics can be created
+		if( minetest.check_player_privs(pname, {apartment_unrent=true})
+		    and string.sub( fields.descr, 1, string.len( 'save_as_' ))=='save_as_') then
+
+			local filename = string.sub( fields.descr, string.len( 'save_as' )+2);
+			if( filename and filename ~= '' ) then
+				-- param2 needs to be translated init initial rotation as well
+				local node = minetest.get_node( pos );
+				if(     node.param2 == 0 ) then
+					filename = filename..'_0_90';
+				elseif( node.param2 == 3 ) then
+					filename = filename..'_0_180';
+				elseif( node.param2 == 1 ) then
+					filename = filename..'_0_0';
+				elseif( node.param2 == 2 ) then
+					filename = filename..'_0_270';
+				end
+				filename = minetest.get_modpath("apartment")..'/schems/'..filename..'.mts';
+				-- really save it with probability_list and slice_prob_list both as nil
+				minetest.create_schematic( apartment.apartments[ fields.descr ].start_pos,
+				                           apartment.apartments[ fields.descr ].end_pos,
+				                           nil, filename, nil);
+				minetest.chat_send_player( pname, 'Created schematic \''..tostring( filename )..'\' for use with the apartment spawner. Saved from '..
+						           minetest.serialize(  apartment.apartments[ fields.descr ].start_pos )..' to '..
+						           minetest.serialize(  apartment.apartments[ fields.descr ].end_pos )..'.');
+			end
+		end
 		return;
 	
 	elseif( fields.rent and pname == original_owner ) then
@@ -392,6 +425,12 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 
 	end
 	y1 = y1 - size_down;      y2 = y2 + size_up;  
+
+	if( not( apartment.apartments[ original_descr ] )) then
+		apartment.apartments[ original_descr ] = {};
+	end
+	apartment.apartments[ original_descr ].start_pos   = {x=x1, y=y1, z=z1};
+	apartment.apartments[ original_descr ].end_pos     = {x=x2, y=y2, z=z2};
 
 	local px = x1;
 	local py = x1;
