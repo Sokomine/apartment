@@ -26,6 +26,7 @@
 --]]    
 
 -- Changelog:
+-- 24.02.14 Buildings can now be removed again (dig the spawn chest)
 -- 25.02.14 Buildings can now be saved. Just prefix the apartment name with save_as_
 --          start_pos and end_pos of apartments are now saved (necessary for the above mentioned save function).
 --          Building spawner chest is now working.

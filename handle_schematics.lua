@@ -412,6 +412,7 @@ handle_schematics.place_schematic = function( pos, param2, path, mirror, replace
 		end
 		position_data.end_pos.y = position_data.start_pos.y + vector.v*position_data.max.y*do_copies.v;
 	end
+	return {start_pos = position_data.start_pos, end_pos = position_data.end_pos };
 end
 
 
@@ -543,14 +544,19 @@ handle_schematics.on_receive_fields = function(pos, formname, fields, sender)
 		local replacement_param    = { odd={{'default:clay',fields.replacement_1}},
 					      even={{'default:clay',fields.replacement_2}}};
 
-		handle_schematics.place_schematic( pos, nil, path, mirror,
+		local res = {};
+		res = handle_schematics.place_schematic( pos, nil, path, mirror,
 				replacement_function, replacement_param,
 				sender, {h=fields.h,v=fields.v},
 				{ apartment_type = fields.apartment_type, apartment_house_name = fields.apartment_house_name})
+		if( res and res.start_pos ) then
+			meta:set_string('start_pos', minetest.serialize( res.start_pos ));
+			meta:set_string('end_pos',   minetest.serialize( res.end_pos ));
+		end
 		return;
 	end
 	-- TODO
-	minetest.chat_send_player( pname, 'NOT YET IMPLEMENTED.');
+	minetest.chat_send_player( pname, 'Dig this spawner in order to remove the building.');
 end
 
 
@@ -580,15 +586,17 @@ minetest.register_node("apartment:build_chest", {
 	after_dig_node = function(pos, oldnode, oldmetadata, digger)
 		local meta  = minetest.get_meta( pos );
 
-		-- TODO: remove the correct building
-		local path = minetest.get_modpath("apartment")..'/schems/'..filename;
-		local mirror = 0;
-		local replacement_function = handle_schematics.replacement_function_decay;
-		local replacement_param    = nil;
+		if( oldmetadata and oldmetadata.fields and oldmetadata.fields.path ) then
 
-		minetest.chat_send_player( digger:get_player_name(), 'Removing building '..tostring( path ));
-		handle_schematics.place_schematic( pos, oldnode.param2, path, mirror, replacement_function, replacement_param, digger, {h=4,v=3} )
-		
+			local replacement_function = handle_schematics.replacement_function_decay;
+			local replacement_param    = nil;
+			local path = minetest.get_modpath("apartment")..'/schems/'..oldmetadata.fields.path;
+
+			minetest.chat_send_player( digger:get_player_name(), 'Removing building '..tostring( oldmetadata.fields.path ));
+			handle_schematics.place_schematic( pos, oldnode.param2, path, 0,
+			                                   replacement_function, replacement_param, digger,
+			                                   {h=oldmetadata.fields.h,v=oldmetadata.fields.v} )
+		end
 	end,
 
 	-- check if digging is allowed
