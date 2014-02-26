@@ -355,6 +355,27 @@ handle_schematics.place_schematic = function( pos, param2, path, mirror, replace
 			p.x = position_data.start_pos.x;	
 			p.z = position_data.start_pos.z;
 			for i=1,do_copies.h do -- horizontal copies			
+
+
+				local key = '';
+				local val = {};
+				local p_end = {x=(p.x+position_data.max.x), y=(p.y+position_data.max.y), z=(p.z+position_data.max.z)};
+				
+				for key,val in pairs( apartment.apartments ) do
+					if( val and val.pos 
+					    and (val.pos.x >= p.x) and (val.pos.x <= p_end.x)
+					    and (val.pos.y >= p.y) and (val.pos.y <= p_end.y)
+					    and (val.pos.z >= p.z) and (val.pos.z <= p_end.z)) then
+
+-- TODO: add FAIL if the apartment is still rented
+						if( placer ) then
+							minetest.chat_send_player( placer:get_player_name(), 'Removing Apartment '..tostring( key )..
+								' (new usage for that place). Position: '..minetest.serialize( val.pos ));
+						end
+						print( 'Removing Apartment '..tostring( key )..' (new usage for that place). Position: '..minetest.serialize( val.pos ));
+						apartment.apartments[ key ] = nil;
+					end
+				end
 				-- switch replacements between houses
 				if( i%2==0 ) then
 					minetest.place_schematic( p, path..'.mts', tostring(position_data.rotate), replacements_even, force_place );
@@ -393,7 +414,7 @@ handle_schematics.place_schematic = function( pos, param2, path, mirror, replace
 
 				end
 				-- replacements_even/replacements_odd ought to affect only DECORATIVE nodes - and none that have on_construct/after_place_node!
-				handle_schematics.update_nodes( p, {x=p.x+position_data.max.x, y=p.y+position_data.max.y*j, z=p.z+position_data.max.z},
+				handle_schematics.update_nodes( p, {x=p.x+position_data.max.x, y=p.y+position_data.max.y, z=p.z+position_data.max.z},
 								building_data.on_constr, building_data.after_place_node, placer, extra_params );
 
 				if( node.param2 == 0 or node.param2 == 2 ) then 
@@ -451,7 +472,7 @@ handle_schematics.update_apartment_spawner_formspec = function( pos )
 		return 'size[9,7]'..
 			'label[2.0,-0.3;Apartment Spawner]'..
 			'label[0.5,0.5;Load schematic from file:]'..
-			'field[5.0,0.9;4.0,0.5;path;;apartment_4x10_0_270]'..
+			'field[5.0,0.9;4.0,0.5;path;;apartment_4x11_0_180]'..
 			'label[0.5,1.5;Name for this apartment house:]'..
 			'field[5.0,1.9;4.0,0.5;apartment_house_name;;Enter house name]'..
 			'label[0.5,2.0;Category (i.e. house, shop):]'..
@@ -560,9 +581,6 @@ handle_schematics.on_receive_fields = function(pos, formname, fields, sender)
 end
 
 
-
-local filename = "apartment_4x10_0_270";
---local filename = "apartment_4x6_0_90";
 
 minetest.register_node("apartment:build_chest", {
 	description = "Apartment spawner",
