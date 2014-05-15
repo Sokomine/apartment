@@ -26,6 +26,7 @@
 --]]    
 
 -- Changelog:
+-- 15.05.14 Added diffrent panel for occupied apartments. Added textures created by VanessaE.
 -- 24.02.14 Buildings can now be removed again (dig the spawn chest)
 -- 25.02.14 Buildings can now be saved. Just prefix the apartment name with save_as_
 --          start_pos and end_pos of apartments are now saved (necessary for the above mentioned save function).
@@ -632,36 +633,22 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 		end
 		apartment.save_data();
 	end
+
+	if( not( oldmetadata) ) then
+		if(     (owner == '' or original_owner==pname)
+		    and (node.name ~= 'apartment:apartment')) then
+			minetest.swap_node( pos, {name='apartment:apartment', param2 = node.param2} );
+		elseif( (node.name ~= 'apartment:apartment_oocupied')
+		    and (original_owner ~= pname)) then
+			minetest.swap_node( pos, {name='apartment:apartment_oocupied', param2 = node.param2} );
+		end
+	end
 	return true;
 end
 
 
 
-
-
-minetest.register_node("apartment:apartment", {
-	drawtype = "nodebox",
-	description = "apartment management panel",
-	tiles = {"default_chest_top.png^door_steel.png"},
-	paramtype  = "light",
-        paramtype2 = "facedir",
-	light_source = 14,
-	groups = {cracky=2},
-	node_box = {
-		type = "fixed",
-		fixed = {
-					{-0.40, -0.4, 0.50, 0.40, 0.40, 0.30},
-			}
-	},
-	selection_box = {
-		type = "fixed",
-		fixed = {
-					{-0.40, -0.4, 0.50, 0.40, 0.40, 0.30},
-			}
-	},
-
-	on_construct = function(pos)
-
+apartment.on_construct = function(pos)
                	local meta = minetest.env:get_meta(pos);
                	meta:set_string('infotext', 'Apartment Management Panel (unconfigured)');
 		meta:set_string('original_owner', '' );
@@ -673,9 +660,10 @@ minetest.register_node("apartment:apartment", {
 		meta:set_int( 'size_left',  0 );
 		meta:set_int( 'size_front', 0 );
 		meta:set_int( 'size_back',  0 );
-       	end,
+end
 
-	after_place_node = function(pos, placer)
+
+apartment.after_place_node = function(pos, placer)
 		local meta  = minetest.get_meta(pos);
 		local pname = (placer:get_player_name() or ""); 
 		meta:set_string("original_owner", pname );
@@ -683,14 +671,10 @@ minetest.register_node("apartment:apartment", {
                	meta:set_string('infotext', 'Apartment Management Panel (owned by '..pname..')' );
 
                 meta:set_string("formspec", apartment.get_formspec( pos, placer ));
+end
 
-        end,
 
-	on_receive_fields = function( pos, formname, fields, player )
-		return apartment.on_receive_fields(pos, formname, fields, player);
-	end,
-
-        can_dig = function(pos,player)
+apartment.can_dig = function(pos,player)
 
                 local meta  = minetest.get_meta(pos);
 		local owner = meta:get_string('owner');
@@ -712,9 +696,10 @@ minetest.register_node("apartment:apartment", {
 		end
 
                 return true;
-        end,
+end
 
-	after_dig_node = function(pos, oldnode, oldmetadata, digger)
+
+apartment.after_dig_node = function(pos, oldnode, oldmetadata, digger)
 
 		if( not( oldmetadata ) or oldmetadata=="nil" or not(oldmetadata.fields)) then
 			minetest.chat_send_player( digger:get_player_name(), "Error: Could not find information about the apartment panel that is to be removed.");
@@ -731,7 +716,101 @@ minetest.register_node("apartment:apartment", {
 			apartment.save_data();
 			minetest.chat_send_player( digger:get_player_name(), "Removed apartment "..descr.." successfully.");
 		end
-    end,
+end
+
+
+
+minetest.register_node("apartment:apartment", {
+	drawtype = "nodebox",
+	description = "apartment management panel",
+---	tiles = {"default_chest_top.png^door_steel.png"},
+	tiles = {"default_steel_block.png","default_steel_block.png","default_steel_block.png","default_steel_block.png",
+			"default_steel_block.png","apartment_controls_vacant.png","default_steel_block.png"},
+	paramtype  = "light",
+        paramtype2 = "facedir",
+	light_source = 14,
+	groups = {cracky=2},
+	node_box = {
+		type = "fixed",
+		fixed = {
+					{ -0.5+(1/16), -0.5+(1/16), 0.5, 0.5-(1/16), 0.5-(1/16), 0.30},
+
+			}
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = {
+					{ -0.5+(1/16), -0.5+(1/16), 0.5, 0.5-(1/16), 0.5-(1/16), 0.30},
+			}
+	},
+
+	on_construct = function(pos)
+		return apartment.on_construct( pos );
+       	end,
+
+	after_place_node = function(pos, placer)
+		return apartment.after_place_node( pos, placer );
+        end,
+
+	on_receive_fields = function( pos, formname, fields, player )
+		return apartment.on_receive_fields(pos, formname, fields, player);
+	end,
+
+        can_dig = function(pos,player)
+		return apartment.can_dig( pos, player );
+        end,
+
+	after_dig_node = function(pos, oldnode, oldmetadata, digger)
+		return apartment.after_dig_node( pos, oldnode, oldmetadata, digger );
+	end,
+
+})
+
+
+-- this one is not in the creative inventory
+minetest.register_node("apartment:apartment_oocupied", {
+	drawtype = "nodebox",
+	description = "apartment management panel",
+---	tiles = {"default_chest_top.png^door_steel.png"},
+	tiles = {"default_steel_block.png","default_steel_block.png","default_steel_block.png","default_steel_block.png",
+			"default_steel_block.png","apartment_controls_occupied.png","default_steel_block.png"},
+	paramtype  = "light",
+        paramtype2 = "facedir",
+	light_source = 14,
+	groups = {cracky=2, not_in_creative_inventory=1 },
+	node_box = {
+		type = "fixed",
+		fixed = {
+					{ -0.5+(1/16), -0.5+(1/16), 0.5, 0.5-(1/16), 0.5-(1/16), 0.30},
+
+			}
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = {
+					{ -0.5+(1/16), -0.5+(1/16), 0.5, 0.5-(1/16), 0.5-(1/16), 0.30},
+			}
+	},
+
+	on_construct = function(pos)
+		return apartment.on_construct( pos );
+       	end,
+
+	after_place_node = function(pos, placer)
+		return apartment.after_place_node( pos, placer );
+        end,
+
+	on_receive_fields = function( pos, formname, fields, player )
+		return apartment.on_receive_fields(pos, formname, fields, player);
+	end,
+
+        can_dig = function(pos,player)
+		return apartment.can_dig( pos, player );
+        end,
+
+	after_dig_node = function(pos, oldnode, oldmetadata, digger)
+		return apartment.after_dig_node( pos, oldnode, oldmetadata, digger );
+	end,
 
 })
 
