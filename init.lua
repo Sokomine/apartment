@@ -20,12 +20,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  Version: 1.2 
+  Version: 1.3 
   Autor:   Sokomine
   Date:    12.02.14
 --]]    
 
 -- Changelog:
+-- 15.06.14 Added abm to turn apartment:apartment into either apartment:apartment_free or apartment:apartment_occupied
+--          so that it becomes visible weather an apartment is free or not 
 -- 15.05.14 Added diffrent panel for occupied apartments. Added textures created by VanessaE.
 -- 24.02.14 Buildings can now be removed again (dig the spawn chest)
 -- 25.02.14 Buildings can now be saved. Just prefix the apartment name with save_as_
@@ -475,7 +477,8 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 							itext =  "\"\" ("..rented_by..")";
 
 						-- only change the one panel that controls this apartment - not any others in the way
-						elseif( n.name == 'apartment:apartment' and px==pos.x and py==pos.y and pz==pos.z) then
+						elseif((n.name == 'apartment:apartment_free' and px==pos.x and py==pos.y and pz==pos.z)
+						     or(n.name == 'apartment:apartment_occupied' and px==pos.x and py==pos.y and pz==pos.z)) then
 							if( pname==original_owner ) then
 								itext = "Rent apartment "..descr.." here by right-clicking this panel!";
 							else
@@ -636,11 +639,11 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 
 	if( not( oldmetadata) ) then
 		if(     (owner == '' or original_owner==pname)
-		    and (node.name ~= 'apartment:apartment')) then
-			minetest.swap_node( pos, {name='apartment:apartment', param2 = node.param2} );
-		elseif( (node.name ~= 'apartment:apartment_oocupied')
+		    and (node.name ~= 'apartment:apartment_free')) then
+			minetest.swap_node( pos, {name='apartment:apartment_free', param2 = node.param2} );
+		elseif( (node.name ~= 'apartment:apartment_occupied')
 		    and (original_owner ~= pname)) then
-			minetest.swap_node( pos, {name='apartment:apartment_oocupied', param2 = node.param2} );
+			minetest.swap_node( pos, {name='apartment:apartment_occupied', param2 = node.param2} );
 		end
 	end
 	return true;
@@ -720,7 +723,8 @@ end
 
 
 
-minetest.register_node("apartment:apartment", {
+
+minetest.register_node("apartment:apartment_free", {
 	drawtype = "nodebox",
 	description = "apartment management panel",
 ---	tiles = {"default_chest_top.png^door_steel.png"},
@@ -768,7 +772,7 @@ minetest.register_node("apartment:apartment", {
 
 
 -- this one is not in the creative inventory
-minetest.register_node("apartment:apartment_oocupied", {
+minetest.register_node("apartment:apartment_occupied", {
 	drawtype = "nodebox",
 	description = "apartment management panel",
 ---	tiles = {"default_chest_top.png^door_steel.png"},
@@ -842,6 +846,52 @@ if( apartment.enable_aphome_command ) then
    })
 end
 
+
+
+-- old version of the node - will transform into _free or _occupied
+minetest.register_node("apartment:apartment", {
+	drawtype = "nodebox",
+	description = "apartment management panel (transition state)",
+---	tiles = {"default_chest_top.png^door_steel.png"},
+	tiles = {"default_steel_block.png","default_steel_block.png","default_steel_block.png","default_steel_block.png",
+			"default_steel_block.png","apartment_controls_vacant.png","default_steel_block.png"},
+	paramtype  = "light",
+        paramtype2 = "facedir",
+	light_source = 14,
+	groups = {cracky=2},
+	node_box = {
+		type = "fixed",
+		fixed = {
+					{ -0.5+(1/16), -0.5+(1/16), 0.5, 0.5-(1/16), 0.5-(1/16), 0.30},
+
+			}
+	},
+	selection_box = {
+		type = "fixed",
+		fixed = {
+					{ -0.5+(1/16), -0.5+(1/16), 0.5, 0.5-(1/16), 0.5-(1/16), 0.30},
+			}
+	},
+})
+
+minetest.register_abm({
+	nodenames = {"apartment:apartment"},
+	interval = 60,
+	chance = 1,
+	action = function(pos, node)
+
+		local node  = minetest.get_node( pos );
+		local meta  = minetest.get_meta( pos );
+		local owner          = meta:get_string( 'owner' );
+		local original_owner = meta:get_string( 'original_owner' );
+
+		if(     owner == '' or original_owner==owner ) then
+				minetest.swap_node( pos, {name='apartment:apartment_free', param2 = node.param2} );
+		else 
+				minetest.swap_node( pos, {name='apartment:apartment_occupied', param2 = node.param2} );
+		end
+	end
+})
 
 
 -- upon server start, read the savefile
