@@ -6,6 +6,8 @@ handle_schematics.SCAFFOLDING = 'random_buildings:support';
 
 handle_schematics.AUTODECAY   = 'apartment:autodecay';
 
+minetest.register_privilege("apartment_spawn", { description = "allows you to spawn apartments", give_to_singleplayer = false});
+
 -- taken from https://github.com/MirceaKitsune/minetest_mods_structures/blob/master/structures_io.lua (Taokis Sructures I/O mod)
 -- gets the size of a structure file
 -- nodenames: contains all the node names that are used in the schematic
@@ -520,7 +522,7 @@ handle_schematics.on_receive_fields = function(pos, formname, fields, sender)
 	end
 
 	pname = sender:get_player_name();
-	if( not( minetest.check_player_privs(pname, {apartment_unrent=true}))) then
+	if( not( minetest.check_player_privs(pname, {apartment_spawn=true}))) then
 		minetest.chat_send_player( pname, 'You do not have the necessary privileges.');
 		return;
 	end
