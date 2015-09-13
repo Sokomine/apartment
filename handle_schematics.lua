@@ -6,6 +6,8 @@ handle_schematics.SCAFFOLDING = 'random_buildings:support';
 
 handle_schematics.AUTODECAY   = 'apartment:autodecay';
 
+handle_schematics.ENABLE_SLOW_DECAY = false
+
 -- taken from https://github.com/MirceaKitsune/minetest_mods_structures/blob/master/structures_io.lua (Taokis Sructures I/O mod)
 -- gets the size of a structure file
 -- nodenames: contains all the node names that are used in the schematic
@@ -457,7 +459,11 @@ handle_schematics.replacement_function_decay = function( nodenames )
 
 	local replacements = {};
 	for _,v in ipairs( nodenames ) do
-		table.insert( replacements, { v, handle_schematics.AUTODECAY })
+		if( handle_schematics.ENABLE_SLOW_DECAY ) then
+			table.insert( replacements, { v, handle_schematics.AUTODECAY })
+		else
+			table.insert( replacements, { v, 'air' })
+		end
 	end
 	return replacements;
 end
@@ -640,7 +646,8 @@ minetest.register_node("apartment:build_chest", {
 })
 
 
-minetest.register_node( handle_schematics.AUTODECAY, {
+if handle_schematics.ENABLE_SLOW_DECAY  then
+   minetest.register_node( handle_schematics.AUTODECAY, {
         description = "decaying building",
         drawtype = "allfaces_optional",
         visual_scale = 1.3,
@@ -649,9 +656,9 @@ minetest.register_node( handle_schematics.AUTODECAY, {
         waving = 1,
         is_ground_content = false,
         groups = {snappy=3},
-})
+   })
 
-minetest.register_abm({
+   minetest.register_abm({
         nodenames = {handle_schematics.AUTODECAY},
         -- A low interval and a high inverse chance spreads the load
         interval = 2,
@@ -659,4 +666,5 @@ minetest.register_abm({
 	action = function(p0, node, _, _)
 		minetest.remove_node( p0 );
 	end
-})
+   })
+end
