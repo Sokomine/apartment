@@ -131,8 +131,8 @@ apartment.get_formspec = function( pos, placer )
 		return 'size[6,3]'..
 			'label[2.0,-0.3;Apartment \''..minetest.formspec_escape( descr )..'\']'..
 			size_txt..
-			'label[0.5,1.8;Do you want to rent this]'..
-			'label[2.8,1.8;apartment? It\'s free!]'..
+			'label[0.3,1.8;Do you want to rent this]'..
+			'label[3.0,1.8;apartment? It\'s free!]'..
 			'button_exit[3,2.5;2,0.5;rent;Yes, rent it]'..
 			'button_exit[1,2.5;1,0.5;abort;No.]';
 	end
@@ -156,9 +156,9 @@ apartment.get_formspec = function( pos, placer )
 			'label[0.5,0.8;Category (i.e. house, shop):]'..
 			'field[5.0,1.4;2.0,0.5;category;;apartment]'..
 
-			'label[0.5,1.3;The apartment shall extend]'..
-			'label[3.3,1.3;this many blocks from here:]'..
-			'label[0.5,1.5;(relative to this panel)]'..
+			'label[0.5,1.7;The apartment shall extend]'..
+			'label[3.4,1.7;this many blocks from here:]'..
+			'label[0.5,2.1;(relative to this panel)]'..
 
 			'label[1.3,3.5;left:]' ..'field[2.0,4.0;1.0,0.5;size_left;;' ..tostring( size_left  )..']'..
 			'label[4.6,3.5;right]' ..'field[4.0,4.0;1.0,0.5;size_right;;'..tostring( size_right )..']'..
