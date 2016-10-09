@@ -123,8 +123,8 @@ apartment.get_formspec = function( pos, placer )
 			return 'size[6.5,3]'..
 			'label[2.0,-0.3;Apartment \''..minetest.formspec_escape( descr )..'\']'..
 			size_txt..
-			'label[0.5,1.4;This apartment is rented by:]'..
-			'label[3.5,1.4;'..tostring( owner )..']'..
+			'label[0.5,1.7;This apartment is rented by:]'..
+			'label[3.5,1.7;'..tostring( owner )..']'..
 			'button_exit[3,2.5;2,0.5;unrent;Move out]'..
 			'button_exit[1,2.5;1,0.5;abort;OK]';
 		end
