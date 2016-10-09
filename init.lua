@@ -445,10 +445,13 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 
 				local m = minetest.get_meta( {x=px, y=py, z=pz});
 				if( m ) then
-					local s = m:get_string( 'owner' );
+				        local s = m:get_string( 'owner' );
 					-- doors are diffrent
 					if( not( s ) or s=='' ) then
 						s = m:get_string( 'doors_owner' );
+					end
+					if ( not s or s == '' )then
+					   s = original_owner
 					end
 					-- change owner to the new player
 					if( s and s ~= '' and (s==original_owner or s==owner)) then
@@ -462,7 +465,8 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 							else
 								itext = "Locked Chest in Ap. "..descr.." ("..rented_by..")";
 							end
-						elseif( n.name == 'doors:door_steel_b_1' or n.name == 'doors:door_steel_t_1' 
+						elseif( n.name == 'doors:door_steel_b_1' or n.name == 'doors:door_steel_t_1'
+							   or n.name == 'doors:door_steel_a' or n.name == 'doors:door_steel_a' 
 						     or n.name == 'doors:door_steel_b_2' or n.name == 'doors:door_steel_t_2' ) then
 							if( pname=='' ) then
 								itext = "Locked Door (owned by "..original_owner..")";
@@ -560,14 +564,16 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 						elseif( n.name == "currency:safe") then
 							itext = "Safe ("..rented_by..")";
 						elseif( n.name == "currency:shop") then
-							itext = "Exchange shop ("..rented_by..")";
-
+						   itext = "Exchange shop ("..rented_by..")";
+						   
 						elseif( n.name == "bitchange:bank" ) then
 							itext = "Bank ("..rented_by..")";
 						elseif( n.name == "bitchange:moneychanger" ) then
 							itext = "Moneychanger  ("..rented_by..")";
 						elseif( n.name == "bitchange:warehouse" ) then
-							itext = "Warehouse ("..rented_by..")";
+						   itext = "Warehouse ("..rented_by..")";
+						elseif (n.name == "smartshop:shop") then
+						   itext = "Shop by " .. rented_by
 						elseif( n.name == "bitchange:shop" ) then
 							if( m:get_string('title') and m:get_string('title') ~= '' ) then
 								itext = "Exchange shop \""..( m:get_string('title')).."\" ("..rented_by..")";
