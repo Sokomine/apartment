@@ -131,8 +131,8 @@ apartment.get_formspec = function( pos, placer )
 		return 'size[6,3]'..
 			'label[2.0,-0.3;Apartment \''..minetest.formspec_escape( descr )..'\']'..
 			size_txt..
-			'label[0.5,1.4;Do you want to rent this]'..
-			'label[2.8,1.4;apartment? It\'s free!]'..
+			'label[0.5,1.8;Do you want to rent this]'..
+			'label[2.8,1.8;apartment? It\'s free!]'..
 			'button_exit[3,2.5;2,0.5;rent;Yes, rent it]'..
 			'button_exit[1,2.5;1,0.5;abort;No.]';
 	end
@@ -899,6 +899,36 @@ minetest.register_abm({
 	end
 })
 
+minetest.register_abm({
+      -- handle duplicates
+      nodenames= {"apartment:apartment_free" },
+      interval = 1,
+      chance = 1,
+      action = function(pos,node)
+	 local meta  = minetest.get_meta( pos );
+	 local name  = meta:get_string('descr');
+--	 minetest.chat_send_all(name)
+	 if apartment.apartments[name] and ( apartment.apartments[name].pos.x ~= pos.x
+					     or apartment.apartments[name].pos.y ~= pos.y or apartment.apartments[name].pos.z ~= pos.z ) then
+	    -- duplicate name
+	    old = apartment.apartments[name]
+	    local number = name:match('%d+$')
+	    if number then
+	       n = name:sub(1,-tostring(number):len()-1)..tostring(number+1)
+	    else
+	       n = name..' 1'
+	    end
+--	    minetest.chat_send_all(n)
+	    meta:set_string('descr', n)
+	    meta:set_string('formspec', apartment.get_formspec(pos, ""))
+	    if not apartment.apartments[ n ] then
+	       apartment.apartments[ n ] = { pos={x=pos.x, y=pos.y, z=pos.z}, original_owner = old.original_owner, owner='', category = old.category,
+						     start_pos = old.start_pos,
+						     end_pos   = old.end_pos  };
+	    end
+	 end
+      end
+})
 
 -- upon server start, read the savefile
 apartment.restore_data();
