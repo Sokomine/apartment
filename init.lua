@@ -573,7 +573,9 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 						elseif( n.name == "bitchange:warehouse" ) then
 						   itext = "Warehouse ("..rented_by..")";
 						elseif (n.name == "smartshop:shop") then
-						   itext = "Shop by " .. rented_by
+						   itext = "Shop " .. rented_by
+						   m:set_int("creative", 0)
+						   m:set_int("type",1)
 						elseif( n.name == "bitchange:shop" ) then
 							if( m:get_string('title') and m:get_string('title') ~= '' ) then
 								itext = "Exchange shop \""..( m:get_string('title')).."\" ("..rented_by..")";
