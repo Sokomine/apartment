@@ -466,7 +466,7 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 								itext = "Locked Chest in Ap. "..descr.." ("..rented_by..")";
 							end
 						elseif( n.name == 'doors:door_steel_b_1' or n.name == 'doors:door_steel_t_1'
-							   or n.name == 'doors:door_steel_a' or n.name == 'doors:door_steel_a' 
+							   or n.name == 'doors:door_steel_a' or n.name == 'doors:door_steel_b'
 						     or n.name == 'doors:door_steel_b_2' or n.name == 'doors:door_steel_t_2' ) then
 							if( pname=='' ) then
 								itext = "Locked Door (owned by "..original_owner..")";
