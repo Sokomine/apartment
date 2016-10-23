@@ -829,7 +829,7 @@ minetest.register_node("apartment:apartment_occupied", {
 
 if( apartment.enable_aphome_command ) then
    minetest.register_chatcommand("aphome", {
-	params = "",
+	params = "<category>",
 	description = "Teleports you back to the apartment you rented.",
 	privs = {},
 	func = function(name, param)
@@ -837,19 +837,24 @@ if( apartment.enable_aphome_command ) then
 			if( not( name )) then
 				return;
 			end
-
+			local category;
+			if (not param or param == "") then
+			   category = 'apartment'
+			else
+			   category = param
+			end
 			local player = minetest.env:get_player_by_name(name);
 
 			for k,v in pairs( apartment.apartments ) do
 				-- found the apartment the player rented
-				if( v and v.owner and v.owner==name ) then
+				if( v and v.owner and v.owner==name and v.category == category) then
 					player:moveto( v.pos, false);
 					minetest.chat_send_player(name, "Welcome back to your apartment "..k..".");
 					return;
 				end
 			end
-
-			minetest.chat_send_player(name, "Please rent an apartment first.");
+			
+			minetest.chat_send_player(name, "Please rent a "..category.." first.");
                 end
    })
 end
@@ -932,5 +937,18 @@ minetest.register_abm({
       end
 })
 
+-- give each player an apartment upon joining the server --
+
+minetest.register_on_newplayer(function(player)
+      for k,v in pairs( apartment.apartments ) do
+	 if (v.owner == '' and v.category == 'apartment') then
+	    if (apartment.rent( v.pos, player:get_player_name(), nil, player )) then
+	       player:moveto( v.pos, false);
+	       minetest.chat_send_player(player:get_player_name(),"Welcome to your new apartment. You can return here by saying '/aphome'")
+	       break
+	    end
+	 end
+      end
+end)
 -- upon server start, read the savefile
 apartment.restore_data();
