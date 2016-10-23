@@ -944,6 +944,8 @@ minetest.register_on_newplayer(function(player)
 	 if (v.owner == '' and v.category == 'apartment') then
 	    if (apartment.rent( v.pos, player:get_player_name(), nil, player )) then
 	       player:moveto( v.pos, false);
+	       local meta = minetest.get_meta( v.pos );
+	       meta:set_string( 'formspec', apartment.get_formspec( pos, player ));
 	       minetest.chat_send_player(player:get_player_name(),"Welcome to your new apartment. You can return here by saying '/aphome'")
 	       break
 	    end
