@@ -947,8 +947,8 @@ if apartment_give_player then
 	       local meta = minetest.get_meta( v.pos );
 	       local node = minetest.get_node( v.pos );
 	       if node.name == "ignore" then -- deal with unloaded nodes.
-		  minetest.get_voxel_manip():read_from_map(pos, pos)
-		  node = minetest.get_node(pos)
+		  minetest.get_voxel_manip():read_from_map(v.pos, v.pos)
+		  node = minetest.get_node(v.pos)
 	       end
 	       if (node.name == 'apartment:apartment_free' and apartment.rent( v.pos, player:get_player_name(), nil, player )) then
 		  player:moveto( v.pos, false);
