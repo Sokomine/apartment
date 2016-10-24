@@ -938,19 +938,21 @@ minetest.register_abm({
 })
 
 -- give each player an apartment upon joining the server --
-
-minetest.register_on_newplayer(function(player)
-      for k,v in pairs( apartment.apartments ) do
-	 if (v.owner == '' and v.category == 'apartment') then
-	    if (apartment.rent( v.pos, player:get_player_name(), nil, player )) then
-	       player:moveto( v.pos, false);
-	       local meta = minetest.get_meta( v.pos );
-	       meta:set_string( 'formspec', apartment.get_formspec( v.pos, player ));
-	       minetest.chat_send_player(player:get_player_name(),"Welcome to your new apartment. You can return here by saying '/aphome'")
-	       break
+local apartment_give_player = minetest.setting_getbool("apartment_give_newplayer") or true;
+if apartment_give_player then
+   minetest.register_on_newplayer(function(player)
+	 for k,v in pairs( apartment.apartments ) do
+	    if (v.owner == '' and v.category == 'apartment') then
+	       if (apartment.rent( v.pos, player:get_player_name(), nil, player )) then
+		  player:moveto( v.pos, false);
+		  local meta = minetest.get_meta( v.pos );
+		  meta:set_string( 'formspec', apartment.get_formspec( v.pos, player ));
+		  minetest.chat_send_player(player:get_player_name(),"Welcome to your new apartment. You can return here by saying '/aphome'")
+		  break
+	       end
 	    end
 	 end
-      end
-end)
+   end)
+end
 -- upon server start, read the savefile
 apartment.restore_data();
