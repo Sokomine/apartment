@@ -915,7 +915,7 @@ minetest.register_abm({
 	 local meta  = minetest.get_meta( pos );
 	 local name  = meta:get_string('descr');
 --	 minetest.chat_send_all(name)
-	 if apartment.apartments[name] and ( apartment.apartments[name].pos.x ~= pos.x
+	 if apartment.apartments[name] and apartment.apartments[name].pos and ( apartment.apartments[name].pos.x ~= pos.x
 					     or apartment.apartments[name].pos.y ~= pos.y or apartment.apartments[name].pos.z ~= pos.z ) then
 	    -- duplicate name
 	    old = apartment.apartments[name]
