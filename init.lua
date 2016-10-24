@@ -943,12 +943,15 @@ if apartment_give_player then
    minetest.register_on_newplayer(function(player)
 	 for k,v in pairs( apartment.apartments ) do
 	    if (v.owner == '' and v.category == 'apartment') then
-	       if (apartment.rent( v.pos, player:get_player_name(), nil, player )) then
+	       local meta = minetest.get_meta( v.pos );
+	       local node = minetest.get_node( v.pos );
+	       if (node.name == 'apartment:apartment_free' and apartment.rent( v.pos, player:get_player_name(), nil, player )) then
 		  player:moveto( v.pos, false);
-		  local meta = minetest.get_meta( v.pos );
 		  meta:set_string( 'formspec', apartment.get_formspec( v.pos, player ));
 		  minetest.chat_send_player(player:get_player_name(),"Welcome to your new apartment. You can return here by saying '/aphome'")
 		  break
+	       elseif node.name == 'apartment:apartment_occupied' then -- Possible case of database corruption...
+		  apartment.apartments[k] = nil
 	       end
 	    end
 	 end
