@@ -455,7 +455,7 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 						-- change the actual owner
 						-- set a fitting infotext
 						local itext = 'Object in Ap. '..descr..' ('..rented_by..')';
-						n = minetest.get_node( {x=px, y=py, z=pz} );
+						local n = minetest.get_node( {x=px, y=py, z=pz} );
 						if( n.name == 'default:chest_locked' ) then
 							if( pname == '' ) then
 								itext = "Locked Chest (owned by "..original_owner..")";
