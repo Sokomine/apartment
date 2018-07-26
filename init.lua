@@ -123,16 +123,16 @@ apartment.get_formspec = function( pos, placer )
 			return 'size[6.5,3]'..
 			'label[2.0,-0.3;Apartment \''..minetest.formspec_escape( descr )..'\']'..
 			size_txt..
-			'label[0.5,1.4;This apartment is rented by:]'..
-			'label[3.5,1.4;'..tostring( owner )..']'..
+			'label[0.5,1.7;This apartment is rented by:]'..
+			'label[3.5,1.7;'..tostring( owner )..']'..
 			'button_exit[3,2.5;2,0.5;unrent;Move out]'..
 			'button_exit[1,2.5;1,0.5;abort;OK]';
 		end
 		return 'size[6,3]'..
 			'label[2.0,-0.3;Apartment \''..minetest.formspec_escape( descr )..'\']'..
 			size_txt..
-			'label[0.5,1.4;Do you want to rent this]'..
-			'label[2.8,1.4;apartment? It\'s free!]'..
+			'label[0.3,1.8;Do you want to rent this]'..
+			'label[3.0,1.8;apartment? It\'s free!]'..
 			'button_exit[3,2.5;2,0.5;rent;Yes, rent it]'..
 			'button_exit[1,2.5;1,0.5;abort;No.]';
 	end
@@ -156,9 +156,9 @@ apartment.get_formspec = function( pos, placer )
 			'label[0.5,0.8;Category (i.e. house, shop):]'..
 			'field[5.0,1.4;2.0,0.5;category;;apartment]'..
 
-			'label[0.5,1.3;The apartment shall extend]'..
-			'label[3.3,1.3;this many blocks from here:]'..
-			'label[0.5,1.5;(relative to this panel)]'..
+			'label[0.5,1.7;The apartment shall extend]'..
+			'label[3.4,1.7;this many blocks from here:]'..
+			'label[0.5,2.1;(relative to this panel)]'..
 
 			'label[1.3,3.5;left:]' ..'field[2.0,4.0;1.0,0.5;size_left;;' ..tostring( size_left  )..']'..
 			'label[4.6,3.5;right]' ..'field[4.0,4.0;1.0,0.5;size_right;;'..tostring( size_right )..']'..
@@ -445,10 +445,13 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 
 				local m = minetest.get_meta( {x=px, y=py, z=pz});
 				if( m ) then
-					local s = m:get_string( 'owner' );
+				        local s = m:get_string( 'owner' );
 					-- doors are diffrent
 					if( not( s ) or s=='' ) then
 						s = m:get_string( 'doors_owner' );
+					end
+					if ( not s or s == '' )then
+					   s = original_owner
 					end
 					-- change owner to the new player
 					if( s and s ~= '' and (s==original_owner or s==owner)) then
@@ -462,7 +465,8 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 							else
 								itext = "Locked Chest in Ap. "..descr.." ("..rented_by..")";
 							end
-						elseif( n.name == 'doors:door_steel_b_1' or n.name == 'doors:door_steel_t_1' 
+						elseif( n.name == 'doors:door_steel_b_1' or n.name == 'doors:door_steel_t_1'
+							   or n.name == 'doors:door_steel_a' or n.name == 'doors:door_steel_b'
 						     or n.name == 'doors:door_steel_b_2' or n.name == 'doors:door_steel_t_2' ) then
 							if( pname=='' ) then
 								itext = "Locked Door (owned by "..original_owner..")";
@@ -560,14 +564,18 @@ apartment.rent = function( pos, pname, oldmetadata, actor )
 						elseif( n.name == "currency:safe") then
 							itext = "Safe ("..rented_by..")";
 						elseif( n.name == "currency:shop") then
-							itext = "Exchange shop ("..rented_by..")";
-
+						   itext = "Exchange shop ("..rented_by..")";
+						   
 						elseif( n.name == "bitchange:bank" ) then
 							itext = "Bank ("..rented_by..")";
 						elseif( n.name == "bitchange:moneychanger" ) then
 							itext = "Moneychanger  ("..rented_by..")";
 						elseif( n.name == "bitchange:warehouse" ) then
-							itext = "Warehouse ("..rented_by..")";
+						   itext = "Warehouse ("..rented_by..")";
+						elseif (n.name == "smartshop:shop") then
+						   itext = "Shop " .. rented_by
+						   m:set_int("creative", 0)
+						   m:set_int("type",1)
 						elseif( n.name == "bitchange:shop" ) then
 							if( m:get_string('title') and m:get_string('title') ~= '' ) then
 								itext = "Exchange shop \""..( m:get_string('title')).."\" ("..rented_by..")";
@@ -821,7 +829,7 @@ minetest.register_node("apartment:apartment_occupied", {
 
 if( apartment.enable_aphome_command ) then
    minetest.register_chatcommand("aphome", {
-	params = "",
+	params = "<category>",
 	description = "Teleports you back to the apartment you rented.",
 	privs = {},
 	func = function(name, param)
@@ -829,19 +837,24 @@ if( apartment.enable_aphome_command ) then
 			if( not( name )) then
 				return;
 			end
-
+			local category;
+			if (not param or param == "") then
+			   category = 'apartment'
+			else
+			   category = param
+			end
 			local player = minetest.env:get_player_by_name(name);
 
 			for k,v in pairs( apartment.apartments ) do
 				-- found the apartment the player rented
-				if( v and v.owner and v.owner==name ) then
+				if( v and v.owner and v.owner==name and v.category == category) then
 					player:moveto( v.pos, false);
 					minetest.chat_send_player(name, "Welcome back to your apartment "..k..".");
 					return;
 				end
 			end
-
-			minetest.chat_send_player(name, "Please rent an apartment first.");
+			
+			minetest.chat_send_player(name, "Please rent a "..category.." first.");
                 end
    })
 end
@@ -893,6 +906,61 @@ minetest.register_abm({
 	end
 })
 
+minetest.register_abm({
+      -- handle duplicates
+      nodenames= {"apartment:apartment_free" },
+      interval = 1,
+      chance = 1,
+      action = function(pos,node)
+	 local meta  = minetest.get_meta( pos );
+	 local name  = meta:get_string('descr');
+--	 minetest.chat_send_all(name)
+	 if apartment.apartments[name] and apartment.apartments[name].pos and ( apartment.apartments[name].pos.x ~= pos.x
+					     or apartment.apartments[name].pos.y ~= pos.y or apartment.apartments[name].pos.z ~= pos.z ) then
+	    -- duplicate name
+	    old = apartment.apartments[name]
+	    local number = name:match('%d+$')
+	    if number then
+	       n = name:sub(1,-tostring(number):len()-1)..tostring(number+1)
+	    else
+	       n = name..' 1'
+	    end
+--	    minetest.chat_send_all(n)
+	    meta:set_string('descr', n)
+	    meta:set_string('formspec', apartment.get_formspec(pos, ""))
+	    if not apartment.apartments[ n ] then
+	       apartment.apartments[ n ] = { pos={x=pos.x, y=pos.y, z=pos.z}, original_owner = old.original_owner, owner='', category = old.category,
+						     start_pos = old.start_pos,
+						     end_pos   = old.end_pos  };
+	    end
+	 end
+      end
+})
 
+-- give each player an apartment upon joining the server --
+local apartment_give_player = minetest.setting_getbool("apartment_give_newplayer") or true;
+if apartment_give_player then
+   minetest.register_on_newplayer(function(player)
+	 for k,v in pairs( apartment.apartments ) do
+	    if (v.owner == '' and v.category == 'apartment') then
+	       
+	       local meta = minetest.get_meta( v.pos );
+	       local node = minetest.get_node( v.pos );
+	       if node.name == "ignore" then -- deal with unloaded nodes.
+		  minetest.get_voxel_manip():read_from_map(v.pos, v.pos)
+		  node = minetest.get_node(v.pos)
+	       end
+	       if (node.name == 'apartment:apartment_free' and apartment.rent( v.pos, player:get_player_name(), nil, player )) then
+		  player:moveto( v.pos, false);
+		  meta:set_string( 'formspec', apartment.get_formspec( v.pos, player ));
+		  minetest.chat_send_player(player:get_player_name(),"Welcome to your new apartment. You can return here by saying '/aphome'")
+		  break
+	       elseif node.name == 'apartment:apartment_occupied' then -- Possible case of database corruption...
+		  apartment.apartments[k] = nil
+	       end
+	    end
+	 end
+   end)
+end
 -- upon server start, read the savefile
 apartment.restore_data();
