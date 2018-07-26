@@ -183,11 +183,26 @@ handle_schematics.update_nodes = function( start_pos, end_pos, on_constr, after_
 		-- steel doors are annoying because the cannot be catched with the functions above
 		local doornodes = minetest.find_nodes_in_area( start_pos, end_pos,
 				{'doors:door_steel_b_1','doors:door_steel_b_2',
-				 'doors:door_steel_t_1','doors:door_steel_t_2'});
+				 'doors:door_steel_t_1','doors:door_steel_t_2',
+				 'doors:door_steel_a', 'doors:door_steel_b'});
 		for _, p in ipairs( doornodes ) do
+			local node = minetest.get_node( p );
 			local meta = minetest.get_meta( p );
-			meta:set_string("doors_owner", player_name );
-			meta:set_string("infotext", "Owned by "..player_name)
+			if( not( node ) or not( node.name )) then
+				-- do nothing
+			elseif( node.name=='doors:door_steel_t_1' or node.name=='doors:door_steel_t_2') then
+				-- replace top of old steel doors with new node
+				minetest.swap_node( p, {name='doors:door_hidden', param2=node.param2} );
+			else
+				-- set the new owner
+				meta:set_string("doors_owner", player_name );
+				meta:set_string("infotext", "Owned by "..player_name)
+				if(     node.name == 'doors:door_steel_b_1' ) then
+					minetest.swap_node( p, {name='doors:door_steel_a', param2=nod3.param2});
+				elseif( node.name == 'doors:door_steel_b_2' ) then
+					minetest.swap_node( p, {name='doors:door_steel_b', param2=node.param2});
+				end
+			end
 		end
 
 
